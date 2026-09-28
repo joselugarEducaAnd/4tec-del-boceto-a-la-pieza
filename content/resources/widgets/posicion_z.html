@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Posición y altura en Z</title>
+<style>
+:root{--t:#9c4419;--to:#6e2f10;--tinte:#f8ede6;--tx:#25243f;--az:#1b4d7e;--hz:#e7f2fa;--hzb:#367da5;--pz:#eec9ad}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;font:16px/1.45 Verdana,"DejaVu Sans",Arial,sans-serif;color:var(--tx);background:#fbf8f6}
+h1{font-size:20px;color:var(--to);margin:0 0 6px}
+p{margin:4px 0 10px}
+.modos{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.modos button{font:inherit;padding:8px 14px;border:2px solid var(--t);background:#fff;color:var(--to);border-radius:20px;cursor:pointer}
+.modos button[aria-pressed="true"]{background:var(--t);color:#fff}
+button:focus-visible,input:focus-visible{outline:3px solid var(--az);outline-offset:2px}
+.ctl{display:grid;grid-template-columns:minmax(150px,max-content) 1fr 70px;gap:6px 12px;align-items:center;margin:6px 0}
+.ctl label{font-weight:bold}
+.ctl input{width:100%}
+.ctl output{font-variant-numeric:tabular-nums;text-align:right}
+svg{width:100%;height:auto;display:block;background:#fff;border:1px solid #e3cfc2;border-radius:10px;margin:10px 0}
+svg text{font-family:Verdana,"DejaVu Sans",Arial,sans-serif}
+#res{display:block;padding:12px 14px;background:#fff;border:2px solid var(--t);border-radius:10px;min-height:3.2em}
+#res b{color:var(--to)}
+.nota{font-size:14px;color:#4a4a5a}
+.oculto{display:none}
+@media (max-width:520px){svg text{font-size:16px}svg text.ej{font-size:12px}body{padding:10px;font-size:15px}.ctl{grid-template-columns:1fr 60px}.ctl label{grid-column:1/3}}
+</style>
+</head>
+<body>
+<h1>Posición y altura en Z</h1>
+<p>Vista lateral (corte vertical) a escala. Mueve los controles, predice y comprueba: la altura dice cuánto mide una forma; la elevación, dónde empieza.</p>
+<div class="modos" role="group" aria-label="Qué quieres estudiar">
+  <button type="button" id="bH" aria-pressed="true">Hueco en una placa</button>
+  <button type="button" id="bL" aria-pressed="false">Letra sobre una base</button>
+</div>
+
+<div id="pH">
+  <div class="ctl"><label for="hP">Espesor de la placa</label><input id="hP" type="range" min="2" max="6" step="0.5" value="4"><output id="oP" for="hP"></output></div>
+  <div class="ctl"><label for="hB">Elevación del hueco</label><input id="hB" type="range" min="-2" max="6" step="0.5" value="1"><output id="oB" for="hB"></output></div>
+  <div class="ctl"><label for="hA">Altura del hueco</label><input id="hA" type="range" min="1" max="8" step="0.5" value="4"><output id="oA" for="hA"></output></div>
+</div>
+
+<div id="pL" class="oculto">
+  <div class="ctl"><label for="lB">Espesor de la base</label><input id="lB" type="range" min="2" max="6" step="0.5" value="4"><output id="oLB" for="lB"></output></div>
+  <div class="ctl"><label for="lE">Elevación de la letra</label><input id="lE" type="range" min="0" max="8" step="0.5" value="5"><output id="oLE" for="lE"></output></div>
+  <div class="ctl"><label for="lA">Altura de la letra</label><input id="lA" type="range" min="1" max="5" step="0.5" value="3"><output id="oLA" for="lA"></output></div>
+</div>
+
+<svg id="fig" viewBox="0 0 640 310" role="img" aria-labelledby="figt"><title id="figt">Corte vertical de la pieza con sus cotas en Z</title><g id="g"></g></svg>
+<output id="res" role="status" aria-live="polite"></output>
+<p class="nota">Medidas en mm. Agrupar no mueve ninguna forma: el resultado depende solo de dónde empieza y dónde acaba cada una.</p>
+
+<script>
+const $=id=>document.getElementById(id);
+const f=v=>(Math.round(v*10)/10).toLocaleString('es-ES',{minimumFractionDigits:0,maximumFractionDigits:1});
+const mm=v=>f(v)+' mm';
+const S=16, Y0=250; let X0=120, W=260, VW=640; // escala px/mm, origen Z=0 en y=Y0
+function layout(){ const n=window.innerWidth<560; X0=n?84:120; W=n?100:260; VW=n?340:640; $('fig').setAttribute('viewBox',`0 0 ${VW} 300`); }
+const y=z=>Y0-z*S;
+let modo='H';
+function cota(x,z1,z2,txt,lado){ // cota vertical con líneas auxiliares
+  if(Math.abs(z2-z1)<1e-9) return '';
+  const a=y(z1), b=y(z2), tx=lado<0?x-8:x+8, anc=lado<0?'end':'start';
+  return `<line x1="${x}" y1="${a}" x2="${x}" y2="${b}" stroke="#1b4d7e" stroke-width="1.5" marker-start="url(#m)" marker-end="url(#m)"/>`+
+         `<text x="${tx}" y="${(a+b)/2+5}" font-size="14" fill="#1b4d7e" text-anchor="${anc}">${txt}</text>`;
+}
+function base(extra){
+  let s='<defs><marker id="m" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L8,4 L0,7Z" fill="#1b4d7e"/></marker>'+
+        '<pattern id="rt" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#eec9ad"/><path d="M0 0V8" stroke="#9c4419" stroke-width="1.2"/></pattern></defs>';
+  // escala en Z
+  const ex=VW>500?40:24;
+  for(let z=-2; z<=12; z++){ const yy=y(z); if(yy<14||yy>292) continue;
+    s+=`<line x1="${ex}" y1="${yy}" x2="${ex+(z%2?6:12)}" y2="${yy}" stroke="#888"/>`;
+    if(z%2===0) s+=`<text x="${ex-4}" y="${yy+5}" font-size="13" fill="#555" text-anchor="end" class="ej">${z}</text>`; }
+  s+=`<line x1="${ex}" y1="${y(12)}" x2="${ex}" y2="292" stroke="#888"/><text x="${ex+10}" y="18" font-size="13" fill="#555">Z (mm)</text>`;
+  s+=`<line x1="${X0-20}" y1="${Y0}" x2="${X0+W+20}" y2="${Y0}" stroke="#444" stroke-width="2" stroke-dasharray="6 4"/><text x="${X0}" y="${Y0+44}" font-size="13" fill="#555">plano Z = 0</text>`;
+  return s+extra;
+}
+function dibujaH(){
+  const P=+$('hP').value, b=+$('hB').value, h=+$('hA').value, t=b+h;
+  $('oP').textContent=mm(P); $('oB').textContent=mm(b); $('oA').textContent=mm(h);
+  const hw=Math.min(90,W*0.4), hx=X0+W/2-hw/2, c1=X0+W+(VW>500?22:16), c2=c1+(VW>500?120:52);
+  let s='';
+  // placa: material que queda (rayado) = placa menos hueco
+  s+=`<rect x="${X0}" y="${y(P)}" width="${W}" height="${P*S}" fill="url(#rt)" stroke="#9c4419" stroke-width="2"/>`;
+  const lo=Math.max(b,0), hi=Math.min(t,P);
+  if(hi>lo) s+=`<rect x="${hx}" y="${y(hi)}" width="${hw}" height="${(hi-lo)*S}" fill="#fff"/>`;
+  s+=`<rect x="${hx}" y="${y(t)}" width="${hw}" height="${h*S}" fill="#e7f2fa" fill-opacity=".45" stroke="#367da5" stroke-width="2" stroke-dasharray="7 5"/>`;
+  s+=`<text x="${hx+hw/2}" y="${y(t)-8}" font-size="14" fill="#367da5" text-anchor="middle">hueco</text>`;
+  const aux=z=>`<line x1="${hx+hw}" y1="${y(z)}" x2="${c2+6}" y2="${y(z)}" stroke="#1b4d7e" stroke-width="1" stroke-dasharray="3 3"/>`;
+  s+=aux(t)+aux(b);
+  s+=cota(X0-12,0,P,f(P),-1)+cota(c1,b,t,'alt. '+f(h),1);
+  if(Math.abs(b)>1e-9) s+=cota(c2,0,b,'elev. '+f(b),1);
+  $('g').innerHTML=base(s);
+  let r;
+  if(t<=0||b>=P) r=`<b>No corta.</b> El hueco va de Z = ${f(b)} a Z = ${f(t)} y la placa, de 0 a ${f(P)}: no se tocan. Al agrupar, la placa queda entera.`;
+  else if(b<=0&&t>=P){
+    if(b<0&&t>P) r=`<b>Pasante con margen.</b> El hueco empieza ${mm(-b)} por debajo y acaba ${mm(t-P)} por encima de la placa: atraviesa aunque haya un pequeño error de posición.`;
+    else if(b===0&&t===P) r=`<b>Pasante exacto.</b> El hueco coincide con las dos caras (Z = 0 y Z = ${f(P)}). Corta, pero sin margen: cualquier error deja una lámina.`;
+    else r=`<b>Pasante.</b> Atraviesa la placa; coincide exactamente con la cara ${b===0?'inferior':'superior'} y sobra por la otra.`;
+  }
+  else if(b>0&&t>=P) r=`<b>Ciego: queda un fondo de ${mm(b)}.</b> El hueco se abre por arriba pero empieza en Z = ${f(b)}. Así se hace un recipiente: elevar el hueco conserva el fondo.`;
+  else if(b<=0&&t<P) r=`<b>Ciego por abajo: queda un techo de ${mm(P-t)}.</b> El hueco se abre por la cara inferior y acaba en Z = ${f(t)}, por debajo de la cara superior (${f(P)}).`;
+  else r=`<b>Cavidad cerrada.</b> El hueco queda entero dentro de la placa (de ${f(b)} a ${f(t)}): no se ve desde fuera y no atraviesa.`;
+  $('res').innerHTML=r;
+}
+function dibujaL(){
+  const B=+$('lB').value, e=+$('lE').value, a=+$('lA').value, t=e+a;
+  $('oLB').textContent=mm(B); $('oLE').textContent=mm(e); $('oLA').textContent=mm(a);
+  const lw=Math.min(110,W*0.45), lx=X0+W/2-lw/2, c1=X0+W+(VW>500?22:16), c2=c1+(VW>500?120:52);
+  let s='';
+  s+=`<rect x="${X0}" y="${y(B)}" width="${W}" height="${B*S}" fill="url(#rt)" stroke="#9c4419" stroke-width="2"/>`;
+  s+=`<rect x="${lx}" y="${y(t)}" width="${lw}" height="${a*S}" fill="#eec9ad" fill-opacity=".85" stroke="#6e2f10" stroke-width="2"/>`;
+  s+=`<text x="${lx+lw/2}" y="${y(t)+a*S/2+5}" font-size="14" fill="#6e2f10" text-anchor="middle">letra</text>`;
+  const top=Math.max(B,t);
+  const aux=z=>`<line x1="${lx+lw}" y1="${y(z)}" x2="${c1+6}" y2="${y(z)}" stroke="#1b4d7e" stroke-width="1" stroke-dasharray="3 3"/>`;
+  s+=aux(t)+aux(e)+`<line x1="${X0+W}" y1="${y(top)}" x2="${c2+6}" y2="${y(top)}" stroke="#1b4d7e" stroke-width="1" stroke-dasharray="3 3"/>`;
+  s+=cota(X0-12,0,B,f(B),-1)+cota(c1,e,t,'alt. '+f(a),1)+cota(c2,0,top,'total '+f(top),1);
+  if(e>B) s+=`<rect x="${lx}" y="${y(e)}" width="${lw}" height="${(e-B)*S}" fill="#fde5e3" stroke="#a32929" stroke-dasharray="4 3"/>`;
+  $('g').innerHTML=base(s);
+  let r;
+  if(e===B) r=`<b>Apoyada.</b> La letra empieza justo en la cara superior de la base (Z = ${f(B)}). Relieve de ${mm(a)}; altura total ${f(B)} + ${f(a)} = ${mm(B+a)}.`;
+  else if(e>B) r=`<b>Flota: ${mm(e-B)} de aire.</b> La letra empieza en Z = ${f(e)} y la base acaba en ${f(B)}. Agrupar no rellena ese hueco: serían dos cuerpos separados. Elevación correcta: ${mm(B)}.`;
+  else if(t<=B) r=`<b>Enterrada.</b> La letra queda entera dentro de la base (acaba en Z = ${f(t)}): no hay relieve. Elevación correcta: ${mm(B)}.`;
+  else r=`<b>Hundida ${mm(B-e)}.</b> La letra empieza dentro de la base; solo sobresalen ${mm(t-B)} en lugar de ${mm(a)}. Altura total ${mm(t)}. Elevación correcta: ${mm(B)}.`;
+  $('res').innerHTML=r;
+}
+function pinta(){ layout(); modo==='H'?dibujaH():dibujaL(); }
+window.addEventListener('resize',pinta);
+function cambia(m){ modo=m; $('bH').setAttribute('aria-pressed',m==='H'); $('bL').setAttribute('aria-pressed',m==='L');
+  $('pH').classList.toggle('oculto',m!=='H'); $('pL').classList.toggle('oculto',m!=='L'); pinta(); }
+$('bH').onclick=()=>cambia('H'); $('bL').onclick=()=>cambia('L');
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',pinta));
+pinta();
+</script>
+</body>
+</html>
