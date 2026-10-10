@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lectura del nonio</title>
+<style>
+:root{--t:#9c4419;--to:#6e2f10;--tx:#25243f;--az:#1b4d7e;--mo:#453f93;--rj:#c02929;--vd:#1e7a3c}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;font:16px/1.45 Verdana,"DejaVu Sans",Arial,sans-serif;color:var(--tx);background:#fbf8f6}
+h1{font-size:20px;color:var(--to);margin:0 0 6px}
+p{margin:4px 0 10px}
+.modos,.fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+button{font:inherit;padding:7px 13px;border:2px solid var(--t);background:#fff;color:var(--to);border-radius:20px;cursor:pointer}
+button:hover{background:#f8ede6}
+.modos button[aria-pressed="true"]{background:var(--t);color:#fff}
+button:focus-visible,input:focus-visible{outline:3px solid var(--az);outline-offset:2px}
+.ctl{display:grid;grid-template-columns:max-content 1fr;gap:6px 12px;align-items:center;margin:6px 0}
+.ctl label{font-weight:bold}
+.ctl input{width:100%}
+svg{width:100%;height:auto;display:block;background:#fff;border:1px solid #e3cfc2;border-radius:10px;margin:10px 0}
+svg text{font-family:Verdana,"DejaVu Sans",Arial,sans-serif}
+#res{display:block;padding:12px 14px;background:#fff;border:2px solid var(--t);border-radius:10px;min-height:3.2em}
+#res b{color:var(--to)}
+#res .ok{color:var(--vd);font-weight:bold}
+#res .mal{color:var(--rj);font-weight:bold}
+.resp input{font:inherit;width:7em;padding:6px 8px;border:2px solid var(--t);border-radius:8px}
+.nota{font-size:14px;color:#4a4a5a}
+.oculto{display:none}
+@media (max-width:520px){body{padding:10px;font-size:15px}.ctl{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>Lectura del nonio</h1>
+<p>Calibre de 150 mm con nonio de resolución 0,1 mm (10 divisiones del nonio ocupan 9 mm). Mueve la corredera y busca la raya del nonio que coincide con una raya de la regla.</p>
+<div class="modos" role="group" aria-label="Modo">
+  <button type="button" id="bE" aria-pressed="true">Explorar</button>
+  <button type="button" id="bR" aria-pressed="false">Reto de lectura</button>
+</div>
+
+<div id="pE">
+  <div class="ctl"><label for="iL">Apertura de las mordazas</label><input id="iL" type="range" min="0" max="120" step="0.1" value="12.4"></div>
+  <div class="fila" role="group" aria-label="Ajuste fino">
+    <button type="button" data-p="-1">−1 mm</button><button type="button" data-p="-0.1">−0,1</button>
+    <button type="button" data-p="0.1">+0,1</button><button type="button" data-p="1">+1 mm</button>
+    <label style="margin-left:6px"><input type="checkbox" id="cV"> Mostrar la lectura</label>
+  </div>
+</div>
+
+<div id="pR" class="oculto">
+  <div class="fila resp">
+    <label for="iA"><b>Tu lectura (mm):</b></label><input id="iA" inputmode="decimal" autocomplete="off" placeholder="en mm">
+    <button type="button" id="bK">Comprobar</button><button type="button" id="bN">Otra medida</button>
+  </div>
+</div>
+
+<svg id="cal" viewBox="0 0 640 200" role="img" aria-labelledby="calt"><title id="calt">Calibre midiendo una pieza: regla con mordaza fija, corredera con nonio, tornillo de bloqueo, rueda de avance y varilla de profundidad</title><g id="gc"></g></svg>
+<svg id="fig" viewBox="0 0 640 230" role="img" aria-labelledby="figt"><title id="figt">Ampliación de la regla y el nonio grabados en el calibre</title><g id="g"></g></svg>
+<output id="res" role="status" aria-live="polite"></output>
+<p class="nota">La ampliación acompaña a la corredera, como tu vista al leer. Antes de medir: limpia las caras, cierra suave y comprueba que el cero del nonio coincide con el cero de la escala. Mira la resolución de tu calibre: no todos usan este nonio.</p>
+
+<script>
+const $=id=>document.getElementById(id);
+const f=v=>(Math.round(v*10)/10).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});
+const MAXL=120;
+let VW=640, S=48, modo='E', L=12.4, reto=null, VISTA=null;
+function layout(){const n=window.innerWidth<560; VW=n?360:640; S=n?32:48; $('fig').setAttribute('viewBox',`0 0 ${VW} 230`); $('cal').setAttribute('viewBox',`0 0 ${VW} ${n?150:200}`);}
+function partes(v){const t=Math.round(v*10); return {m:Math.floor(t/10), k:t%10};}
+const DEFS=`<defs>
+<linearGradient id="ac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f4f6"/><stop offset=".45" stop-color="#cfd5db"/><stop offset="1" stop-color="#a9b1b9"/></linearGradient>
+<linearGradient id="ac2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3e7eb"/><stop offset="1" stop-color="#9aa3ac"/></linearGradient>
+<linearGradient id="acv" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c2c9d0"/><stop offset=".5" stop-color="#eef1f3"/><stop offset="1" stop-color="#b3bbc3"/></linearGradient>
+<pattern id="mad" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#e3b77f"/><path d="M0 3 Q5 1 10 3 M0 8 Q5 6 10 8" stroke="#c28a4c" fill="none"/></pattern>
+</defs>`;
+function calibre(v){ // vista general del calibre (realista, no a escala de lectura)
+  const n=VW<500, k=n?0.75:1;                 // factor vertical
+  const x0=n?34:52, sc=(VW-x0-14)/182, O=8;   // O: el cero de las escalas está a 8 mm de la cara de medida
+  const Y=t=>t*k;
+  const xb0=x0-26*k, xe=x0+175*sc, yB1=Y(62), yB2=Y(96);
+  const W=46*sc, xc=x0+v*sc;                   // corredera: cara de medida en xc
+  let s=DEFS;
+  // varilla de profundidad (sale por el final del cuerpo; se recorta si se sale del dibujo)
+  s+=`<rect x="${xe-4}" y="${Y(76)}" width="${v*sc+4}" height="${Y(5)}" fill="url(#ac2)" stroke="#6b737b" stroke-width=".8"/>`;
+  // pieza que se mide
+  if(v>=2) s+=`<rect x="${x0}" y="${Y(126)}" width="${v*sc}" height="${Y(40)}" rx="2" fill="url(#mad)" stroke="#9a6a35"/>`+
+              (v*sc>60?`<text x="${x0+v*sc/2}" y="${Y(151)}" font-size="${n?11:13}" fill="#5c3b17" text-anchor="middle">pieza</text>`:'');
+  // cuerpo (regla) con la escala principal
+  s+=`<path d="M${xb0} ${yB1} H${xe-6} Q${xe} ${yB1} ${xe} ${yB1+6} V${yB2} H${xb0}Z" fill="url(#ac)" stroke="#6b737b"/>`;
+  for(let i=0;i<=165;i++){ if(sc<2.5&&i%5) continue; const x=x0+(O+i)*sc;
+    const lg=i%10===0?Y(14):i%5===0?Y(10):Y(6);
+    s+=`<line x1="${x}" y1="${yB2}" x2="${x}" y2="${yB2-lg}" stroke="#2b2f33" stroke-width="${i%10?0.7:1}"/>`;
+    if(i%10===0&&(!n||i%20===0)) s+=`<text x="${x}" y="${yB2-Y(17)}" font-size="${n?9:10}" fill="#2b2f33" text-anchor="middle">${i/10}</text>`; }
+  // mordaza fija: exteriores (abajo) e interiores (arriba)
+  s+=`<path d="M${xb0} ${yB2} H${x0} V${Y(164)} L${x0-5*k} ${Y(180)} H${x0-12*k} L${xb0} ${Y(132)}Z" fill="url(#acv)" stroke="#6b737b"/>`;
+  s+=`<path d="M${xb0+6*k} ${yB1} H${x0} V${Y(44)} L${x0-3*k} ${Y(24)} H${x0-8*k} L${xb0+6*k} ${Y(50)}Z" fill="url(#acv)" stroke="#6b737b"/>`;
+  // corredera: marco con ventana, nonio en la placa inferior
+  s+=`<path d="M${xc} ${yB2} H${xc+30*k} V${Y(132)} L${xc+12*k} ${Y(180)} H${xc+5*k} L${xc} ${Y(164)}Z" fill="url(#acv)" stroke="#5f6870"/>`;         // exteriores
+  s+=`<path d="M${xc} ${yB1} H${xc+20*k} L${xc+8*k} ${Y(24)} H${xc+3*k} L${xc} ${Y(44)}Z" fill="url(#acv)" stroke="#5f6870"/>`;                      // interiores
+  s+=`<rect x="${xc}" y="${Y(54)}" width="${W}" height="${Y(12)}" rx="2" fill="url(#ac2)" stroke="#5f6870"/>`;                                       // barra superior
+  s+=`<rect x="${xc}" y="${yB2}" width="${W}" height="${Y(22)}" rx="2" fill="url(#ac2)" stroke="#5f6870"/>`;                                       // placa del nonio
+  s+=`<rect x="${xc}" y="${Y(54)}" width="${4*sc}" height="${yB2-Y(54)+Y(22)}" fill="url(#ac2)" stroke="#5f6870"/>`;                              // lado izquierdo
+  s+=`<rect x="${xc+W-4*sc}" y="${Y(54)}" width="${4*sc}" height="${yB2-Y(54)+Y(22)}" fill="url(#ac2)" stroke="#5f6870"/>`;                       // lado derecho
+  for(let j=0;j<=10;j++){ if(sc<2.5&&j%5) continue; const x=xc+(O+0.9*j)*sc; s+=`<line x1="${x}" y1="${yB2}" x2="${x}" y2="${yB2+(j%5?Y(5):Y(8))}" stroke="#2b2f33" stroke-width=".8"/>`; }
+  // tornillo de bloqueo y rueda de avance
+  s+=`<rect x="${xc+W/2-5*k}" y="${Y(44)}" width="${10*k}" height="${Y(10)}" fill="#8d959d" stroke="#5f6870"/><ellipse cx="${xc+W/2}" cy="${Y(43)}" rx="${8*k}" ry="${Y(4)}" fill="#b9c0c7" stroke="#5f6870"/>`;
+  s+=`<circle cx="${xc+W-12*k}" cy="${Y(126)}" r="${7*k}" fill="#9aa3ac" stroke="#5f6870"/>`;
+  for(let a=0;a<180;a+=30){const r=7*k,cx=xc+W-12*k,cy=Y(126),t=a*Math.PI/180; s+=`<line x1="${cx-r*Math.cos(t)}" y1="${cy-r*Math.sin(t)}" x2="${cx+r*Math.cos(t)}" y2="${cy+r*Math.sin(t)}" stroke="#6b737b" stroke-width=".6"/>`;}
+  // lupa sobre la zona que se amplía
+  const xl=xc+(O+3)*sc, yl=yB2;
+  s+=`<circle cx="${xl}" cy="${yl}" r="${16*k}" fill="none" stroke="#c02929" stroke-width="2"/>`;
+  s+=`<text x="${x0-2}" y="${Y(196)}" font-size="${n?10:12}" fill="#444">${n?'':'Calibre de 150 mm · '}la lupa roja marca lo que se ve ampliado abajo</text>`;
+  $('gc').innerHTML=s;
+}
+function ampliacion(v,mostrar){ // escala grabada en el acero, ampliada
+  const {m,k}=partes(v), n=VW<500;
+  const xN=n?60:170, yE=118; VISTA={xN,S,v};                 // cero del nonio y borde inferior de la regla
+  const X=mm=>xN+(mm-v)*S;
+  let s=DEFS;
+  s+=`<rect x="0" y="0" width="${VW}" height="${yE}" fill="url(#ac)"/>`;
+  for(let i=Math.floor(v-3);i<=Math.ceil(v+VW/S)+1;i++){ if(i<0) continue; const x=X(i); if(x<-10||x>VW+10) continue;
+    const coin=mostrar&&((i===m+k)||(k===0&&i===m+9));
+    const lg=i%10===0?40:i%5===0?28:19;
+    s+=`<line x1="${x}" y1="${yE}" x2="${x}" y2="${yE-lg}" stroke="${coin?'#c02929':'#1f2326'}" stroke-width="${coin?3.2:(i%10?1.6:2.2)}"/>`;
+    if(i%10===0&&x>8&&x<VW-8) s+=`<text x="${x}" y="${yE-48}" font-size="22" font-weight="bold" fill="#1f2326" text-anchor="middle">${i/10}</text>`; }
+  // placa de la corredera con el nonio
+  const xL=xN-1.3*S;
+  s+=`<rect x="${xL}" y="${yE}" width="${VW-xL+10}" height="78" fill="url(#ac2)"/><line x1="${xL}" y1="${yE+1}" x2="${VW}" y2="${yE+1}" stroke="#5f6870" stroke-width="2"/>`;
+  s+=`<rect x="${xL-10}" y="0" width="14" height="${yE+78}" fill="url(#acv)" stroke="#5f6870"/>`;   // lado de la corredera
+  for(let j=0;j<=10;j++){const x=xN+j*0.9*S; const c=mostrar&&(j===k||(k===0&&j===10));
+    s+=`<line x1="${x}" y1="${yE}" x2="${x}" y2="${yE+(j%5?20:30)}" stroke="${c?'#c02929':'#1f2326'}" stroke-width="${c?3.2:1.6}"/>`;
+    s+=`<text x="${x}" y="${yE+50}" font-size="${j%5?14:16}" fill="${c?'#c02929':'#1f2326'}" text-anchor="middle" ${c||j%5===0?'font-weight="bold"':''}>${j}</text>`;}
+  s+=`<text x="${xN+9*S}" y="${yE+72}" font-size="12" fill="#1f2326" text-anchor="end">0,1 mm</text>`;
+  s+=`<text x="${VW-6}" y="16" font-size="12" fill="#3b4045" text-anchor="end">regla: los números son centímetros</text>`;
+  if(mostrar){
+    const xc=xN+k*0.9*S;
+    s+=`<line x1="${xc}" y1="${yE-46}" x2="${xc}" y2="${yE+34}" stroke="#c02929" stroke-dasharray="5 4"/>`;
+    s+=`<line x1="${xN}" y1="${yE+56}" x2="${xN}" y2="${yE+96}" stroke="#1b4d7e" stroke-dasharray="3 3"/><text x="${xN+4}" y="${yE+108}" font-size="12" fill="#1b4d7e">cero del nonio</text>`;
+  }
+  $('g').innerHTML=s;
+}
+function enteros(m){const c=Math.floor(m/10), r=m%10;
+  if(c===0) return `${m} rayas desde el 0`;
+  const visible=VISTA? VISTA.xN+(c*10-VISTA.v)*VISTA.S>8 : true;
+  if(!visible&&r!==0){const d=10-r; return `el ${c+1} son ${(c+1)*10} mm y el cero del nonio queda ${d} ${d===1?'raya':'rayas'} antes`;}
+  return r===0? `justo en el ${c}, que son ${c*10} mm` : `el ${c} son ${c*10} mm y hay ${r} ${r===1?'raya':'rayas'} más`;}
+function explicar(v){const {m,k}=partes(v); return `Antes del cero del nonio: <b>${m} mm</b> (${enteros(m)}). Coincide la raya <b>${k}</b> del nonio: añade ${k} × 0,1 = ${f(k/10)} mm. Lectura: <b>${f(m+k/10)} mm</b>.`;}
+function dibuja(){
+  layout();
+  if(modo==='E'){ L=Math.round(+$('iL').value*10)/10; const ver=$('cV').checked; calibre(L); ampliacion(L,ver);
+    $('res').innerHTML= ver? explicar(L) : 'Busca la raya del nonio que mejor coincide con una raya de la regla. Cuando lo tengas, marca «Mostrar la lectura» para comprobarlo.'; }
+  else { calibre(reto.v); ampliacion(reto.v,reto.hecho); }
+}
+function nuevoReto(){ let v; do{ v=Math.round((1+Math.random()*(MAXL-2))*10)/10; }while(reto&&v===reto.v); reto={v,hecho:false,intentos:0}; $('iA').value=''; $('res').innerHTML='¿Cuánto mide la pieza? Escribe la lectura en milímetros, con una cifra decimal.'; dibuja(); }
+function comprobar(){
+  const txt=$('iA').value.trim().replace(',','.'); const a=parseFloat(txt);
+  if(!/^\d+(\.\d{1,2})?$/.test(txt)){ $('res').innerHTML='Escribe un número en milímetros con una cifra decimal, por ejemplo 12,4.'; return; }
+  reto.intentos++; const {m,k}=partes(reto.v);
+  if(Math.abs(a-reto.v)<1e-6){ reto.hecho=true; $('res').innerHTML=`<span class="ok">Correcto.</span> `+explicar(reto.v); dibuja(); return; }
+  let pista;
+  if(Math.abs(a*10-reto.v)<0.051) pista=`Has dado la medida en centímetros. Los números de la regla son centímetros, pero la lectura se escribe en milímetros.`;
+  else if(Math.floor(a)!==m) pista=`Revisa los milímetros enteros: busca la última raya de la regla que queda <b>antes</b> del cero del nonio. Recuerda que los números de la regla son centímetros: el 1 son 10 mm.`;
+  else if(Math.round((a-Math.floor(a))*10)===(10-k)%10) pista=`Los milímetros están bien. Has contado las rayas del nonio desde el otro extremo: cuenta desde el 0.`;
+  else pista=`Los milímetros están bien (${m}). Busca la raya del nonio que coincide mejor con una de la regla; su número son las décimas.`;
+  if(reto.intentos>=3){ reto.hecho=true; pista+=' '+explicar(reto.v); dibuja(); }
+  $('res').innerHTML=`<span class="mal">Todavía no.</span> `+pista;
+}
+function setModo(x){modo=x; $('bE').setAttribute('aria-pressed',x==='E'); $('bR').setAttribute('aria-pressed',x==='R'); $('pE').classList.toggle('oculto',x!=='E'); $('pR').classList.toggle('oculto',x!=='R'); if(x==='R') nuevoReto(); else dibuja();}
+$('bE').onclick=()=>setModo('E'); $('bR').onclick=()=>setModo('R');
+$('iL').addEventListener('input',dibuja); $('cV').addEventListener('change',dibuja);
+document.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{const v=Math.min(MAXL,Math.max(0,Math.round((+$('iL').value+ +b.dataset.p)*10)/10)); $('iL').value=v; dibuja();});
+$('bK').onclick=comprobar; $('bN').onclick=nuevoReto; $('iA').addEventListener('keydown',e=>{if(e.key==='Enter')comprobar();});
+window.addEventListener('resize',dibuja);
+dibuja();
+</script>
+</body>
+</html>

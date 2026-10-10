@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holgura de un encaje</title>
+<style>
+:root{--t:#9c4419;--to:#6e2f10;--tx:#25243f;--az:#1b4d7e;--rj:#c02929}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;font:16px/1.45 Verdana,"DejaVu Sans",Arial,sans-serif;color:var(--tx);background:#fbf8f6}
+h1{font-size:20px;color:var(--to);margin:0 0 6px}
+p{margin:4px 0 10px}
+.fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.fila span{font-weight:bold;margin-right:4px}
+button{font:inherit;padding:7px 13px;border:2px solid var(--t);background:#fff;color:var(--to);border-radius:20px;cursor:pointer}
+button:hover{background:#f8ede6}
+button:focus-visible,input:focus-visible{outline:3px solid var(--az);outline-offset:2px}
+.ctl{display:grid;grid-template-columns:minmax(170px,max-content) 1fr 80px;gap:6px 12px;align-items:center;margin:6px 0}
+.ctl label{font-weight:bold}
+.ctl input{width:100%}
+.ctl output{font-variant-numeric:tabular-nums;text-align:right}
+svg{width:100%;height:auto;display:block;background:#fff;border:1px solid #e3cfc2;border-radius:10px;margin:10px 0}
+svg text{font-family:Verdana,"DejaVu Sans",Arial,sans-serif}
+#res{display:block;padding:12px 14px;background:#fff;border:2px solid var(--t);border-radius:10px;min-height:4.5em}
+#res b{color:var(--to)}
+#res .mal{color:var(--rj);font-weight:bold}
+.nota{font-size:14px;color:#4a4a5a}
+@media (max-width:520px){body{padding:10px;font-size:15px}button{padding:5px 10px;font-size:14px}#dD{display:none}.ctl{grid-template-columns:1fr 70px}.ctl label{grid-column:1/3}svg text{font-size:15px}}
+</style>
+</head>
+<body>
+<h1>Holgura de un encaje</h1>
+<p>Corte vertical de la caja con la tapa puesta. Cambia las medidas y mueve la pestaña dentro del hueco: la holgura total no cambia, pero sí cómo se reparte entre los dos lados.</p>
+
+<div class="ctl"><label for="iH">Ancho del hueco</label><input id="iH" type="range" min="45" max="47" step="0.1" value="46"><output id="oH" for="iH"></output></div>
+<div class="ctl"><label for="iP">Ancho de la pestaña</label><input id="iP" type="range" min="44" max="46.5" step="0.1" value="45.4"><output id="oP" for="iP"></output></div>
+<div class="ctl"><label for="iD">Posición de la pestaña</label><input id="iD" type="range" min="-100" max="100" step="5" value="0" aria-describedby="dD"><output id="oD" for="iD"></output></div>
+<p class="nota" id="dD">La posición va de pegada a la pared izquierda (−) a pegada a la derecha (+); 0 es centrada.</p>
+
+<div class="fila" role="group" aria-label="Mover la pestaña">
+  <button type="button" id="bI">← Pegar a la izquierda</button>
+  <button type="button" id="bC">Centrar</button>
+  <button type="button" id="bD">Pegar a la derecha →</button>
+</div>
+<div class="fila" role="group" aria-label="Probar una holgura por lado">
+  <span>Probar holgura por lado (mm):</span>
+  <button type="button" data-c="0.2">0,2</button>
+  <button type="button" data-c="0.3">0,3</button>
+  <button type="button" data-c="0.5">0,5</button>
+</div>
+
+<svg id="fig" viewBox="0 0 640 330" role="img" aria-labelledby="figt"><title id="figt">Corte de la caja y la tapa con las holguras acotadas</title><g id="g"></g></svg>
+<output id="res" role="status" aria-live="polite"></output>
+<p class="nota">Dibujo esquemático: cada décima de milímetro se ve ampliada para que la diferencia entre hueco y pestaña se pueda leer; las piezas no están a escala. Son medidas nominales del diseño: el ajuste real depende de la máquina, el material y el acabado, y se comprueba con una probeta y el calibre.</p>
+
+<script>
+const $=id=>document.getElementById(id);
+const r1=v=>Math.round(v*100)/100;
+const f=v=>r1(v).toLocaleString('es-ES',{minimumFractionDigits:0,maximumFractionDigits:2});
+const mm=v=>f(v)+' mm';
+let VW=640, B=250, K=60, CX=320; // ancho dibujado = B + (medida − 44 mm)·K: cada pieza crece con SU medida
+function layout(){const n=window.innerWidth<560; VW=n?360:640; B=n?100:200; K=n?28:50; CX=VW/2; $('fig').setAttribute('viewBox',`0 0 ${VW} 330`);}
+function estado(){
+  const H=+$('iH').value, P=+$('iP').value, tot=r1(H-P);
+  const t=+$('iD').value/100; // -1..1
+  const d=tot>0? t*tot/2 : 0;   // desplazamiento de la pestaña respecto al centro (mm)
+  return {H,P,tot,t,d,izq:r1(tot/2+d),der:r1(tot/2-d)};
+}
+function cotaH(x1,x2,yy,txt,col,arriba){
+  if(Math.abs(x2-x1)<2) return `<line x1="${x1}" y1="${yy-8}" x2="${x1}" y2="${yy+8}" stroke="${col}" stroke-width="2"/><text x="${x1}" y="${arriba?yy-12:yy+22}" font-size="14" fill="${col}" text-anchor="middle">${txt}</text>`;
+  return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${col}" stroke-width="1.5" marker-start="url(#m${col==='#c02929'?'r':''})" marker-end="url(#m${col==='#c02929'?'r':''})"/>`+
+         `<text x="${(x1+x2)/2}" y="${arriba?yy-8:yy+20}" font-size="14" fill="${col}" text-anchor="middle">${txt}</text>`;
+}
+function dibuja(){
+  layout();
+  const e=estado();
+  $('oH').value=mm(e.H); $('oP').value=mm(e.P);
+  $('oD').value=e.tot>0?(e.t===0?'centrada':(e.t<0?'izq. ':'der. ')+Math.abs(Math.round(e.t*100))+' %'):'—';
+  $('iD').disabled=!(e.tot>0);
+  // geometría en px
+  const PW=B+(e.P-44)*K, hueco=B+(e.H-44)*K;   // la pestaña solo cambia con su ancho; el hueco, con el suyo
+  const xHi=CX-hueco/2, xHd=CX+hueco/2;
+  const xPi=CX-PW/2+e.d*K, xPd=xPi+PW;
+  const pared=VW>500?50:30, yT=70, yPl=yT+34, yF=270, yFondo=250;
+  let s='<defs><marker id="m" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L8,4 L0,7Z" fill="#1b4d7e"/></marker>'+
+        '<marker id="mr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L8,4 L0,7Z" fill="#c02929"/></marker>'+
+        '<pattern id="rt" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#eec9ad"/><path d="M0 0V8" stroke="#9c4419" stroke-width="1.2"/></pattern>'+
+        '<pattern id="rz" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="8" height="8" fill="#dbe8f3"/><path d="M0 0V8" stroke="#367da5" stroke-width="1.2"/></pattern></defs>';
+  // caja: paredes y fondo
+  s+=`<rect x="${xHi-pared}" y="${yPl}" width="${pared}" height="${yF-yPl}" fill="url(#rt)" stroke="#6e2f10"/>`;
+  s+=`<rect x="${xHd}" y="${yPl}" width="${pared}" height="${yF-yPl}" fill="url(#rt)" stroke="#6e2f10"/>`;
+  s+=`<rect x="${xHi}" y="${yFondo}" width="${xHd-xHi}" height="${yF-yFondo}" fill="url(#rt)" stroke="#6e2f10"/>`;
+  s+=`<text x="${xHi-pared/2}" y="${yF+20}" font-size="13" fill="#6e2f10" text-anchor="middle">caja</text>`;
+  // tapa: placa + pestaña (la placa acompaña a la pestaña)
+  const plw=hueco, plx=(xPi+xPd)/2-hueco/2; // la placa de la tapa mide lo mismo que el exterior de la caja
+  s+=`<rect x="${plx-pared}" y="${yT}" width="${plw+2*pared}" height="${yPl-yT}" fill="url(#rz)" stroke="#1b4d7e"/>`;
+  s+=`<rect x="${xPi}" y="${yPl}" width="${PW}" height="${(yFondo-yPl)*0.62}" fill="url(#rz)" stroke="#1b4d7e"/>`;
+  s+=`<text x="${xPi+PW/2}" y="${yPl+46}" font-size="14" fill="#1b4d7e" text-anchor="middle">pestaña</text>`;
+  s+=`<text x="${plx-pared+6}" y="${yT-8}" font-size="13" fill="#1b4d7e">tapa</text>`;
+  // interferencia
+  if(e.tot<0){
+    const a=Math.max(xPi,xHi-pared), b=xHi, c=xHd, dd=xPd;
+    s+=`<rect x="${xPi}" y="${yPl}" width="${b-xPi}" height="${(yFondo-yPl)*0.62}" fill="#c02929" opacity=".55"/>`;
+    s+=`<rect x="${c}" y="${yPl}" width="${dd-c}" height="${(yFondo-yPl)*0.62}" fill="#c02929" opacity=".55"/>`;
+    const yy=yPl+(yFondo-yPl)*0.62+22;
+    s+=`<text x="${xHi+4}" y="${yy}" font-size="14" fill="#c02929" font-weight="bold">choca</text><text x="${xHd-4}" y="${yy}" font-size="14" fill="#c02929" font-weight="bold" text-anchor="end">choca</text>`;
+  }
+  // cotas
+  const yc=yPl+(yFondo-yPl)*0.62+26;
+  if(e.tot>0){
+    s+=cotaH(xHi,xPi,yc,'','#c02929',false)+`<text x="${xHi+4}" y="${yc+22}" font-size="14" fill="#c02929" font-weight="bold">${mm(e.izq)}</text>`;
+    s+=cotaH(xPd,xHd,yc,'','#c02929',false)+`<text x="${xHd-4}" y="${yc+22}" font-size="14" fill="#c02929" font-weight="bold" text-anchor="end">${mm(e.der)}</text>`;
+  }
+  s+=`<line x1="${xHi}" y1="${yPl}" x2="${xHi}" y2="${yF+46}" stroke="#1b4d7e" stroke-dasharray="4 3"/><line x1="${xHd}" y1="${yPl}" x2="${xHd}" y2="${yF+46}" stroke="#1b4d7e" stroke-dasharray="4 3"/>`;
+  s+=cotaH(xHi,xHd,yF+40,'hueco '+mm(e.H),'#1b4d7e',true);
+  s+=`<line x1="${xPi}" y1="${yT-4}" x2="${xPi}" y2="${24}" stroke="#1b4d7e" stroke-dasharray="4 3"/><line x1="${xPd}" y1="${yT-4}" x2="${xPd}" y2="${24}" stroke="#1b4d7e" stroke-dasharray="4 3"/>`;
+  s+=cotaH(xPi,xPd,30,'pestaña '+mm(e.P),'#1b4d7e',true);
+  $('g').innerHTML=s;
+  // texto
+  let t='';
+  if(e.tot<0){
+    t=`<span class="mal">La pestaña es ${mm(-e.tot)} más ancha que el hueco: no entra.</span> Forzarla rompe la pieza o la pared; se corrige en el diseño, reduciendo la pestaña o ampliando el hueco.`;
+  } else if(e.tot===0){
+    t=`<b>Holgura total: 0 mm.</b> En el dibujo encaja justo, pero cualquier desviación de la fabricación (rebaba, primera capa aplastada, contracción) impedirá que entre. Prueba con 0,2, 0,3 o 0,5 mm por lado en una probeta.`;
+  } else {
+    t=`<b>Holgura total:</b> ${f(e.H)} − ${f(e.P)} = <b>${mm(e.tot)}</b>. Centrada, ${f(e.tot)} / 2 = <b>${mm(e.tot/2)} por lado</b>.<br>`;
+    if(e.izq<=0.0001) t+=`Pegada a la izquierda: allí queda 0 y toda la holgura, <b>${mm(e.tot)}</b>, está a la derecha.`;
+    else if(e.der<=0.0001) t+=`Pegada a la derecha: allí queda 0 y toda la holgura, <b>${mm(e.tot)}</b>, está a la izquierda.`;
+    else if(Math.abs(e.izq-e.der)<0.0001) t+=`Ahora está centrada: ${mm(e.izq)} a cada lado.`;
+    else t+=`Ahora: izquierda <b>${mm(e.izq)}</b> y derecha <b>${mm(e.der)}</b>. Suman ${mm(e.tot)}: mover la pestaña reparte la holgura, no la cambia.`;
+  }
+  $('res').innerHTML=t;
+}
+['iH','iP','iD'].forEach(id=>$(id).addEventListener('input',dibuja));
+$('bI').onclick=()=>{$('iD').value=-100;dibuja();};
+$('bC').onclick=()=>{$('iD').value=0;dibuja();};
+$('bD').onclick=()=>{$('iD').value=100;dibuja();};
+document.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const H=+$('iH').value;$('iP').value=r1(H-2*b.dataset.c);$('iD').value=0;dibuja();});
+window.addEventListener('resize',dibuja);
+dibuja();
+</script>
+</body>
+</html>
