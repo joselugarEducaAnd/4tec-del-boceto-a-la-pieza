@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540">
+<rect width="900" height="540" fill="#fff"/>
+<text x="20" y="34" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" fill="#222">Cómo funciona una impresora 3D de filamento</text>
+<!-- marco -->
+<rect x="150" y="70" width="14" height="400" fill="#cfd4da"/><rect x="566" y="70" width="14" height="400" fill="#cfd4da"/>
+<rect x="150" y="150" width="430" height="12" fill="#aab2bb"/>
+<!-- bobina -->
+<circle cx="70" cy="140" r="48" fill="#f3d3bf" stroke="#9c4419" stroke-width="3"/><circle cx="70" cy="140" r="14" fill="#fff" stroke="#9c4419" stroke-width="3"/>
+<path d="M110,120 C180,80 260,90 330,140" fill="none" stroke="#9c4419" stroke-width="4"/>
+<!-- extrusor y boquilla -->
+<rect x="300" y="135" width="70" height="60" rx="6" fill="#6b7785"/>
+<polygon points="322,195 348,195 340,225 330,225" fill="#e0a43a" stroke="#8a5a10" stroke-width="2"/>
+<!-- pieza en capas -->
+<rect x="190" y="440" width="350" height="16" fill="#cfd4da" stroke="#8c96a0"/>
+<rect x="250" y="424" width="170" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="252" y="411" width="166" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="254" y="398" width="162" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="256" y="385" width="158" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="258" y="372" width="154" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="260" y="359" width="150" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><rect x="262" y="346" width="146" height="12" rx="6" fill="#f0b48f" stroke="#9c4419" stroke-width="1.5"/><path d="M335,226 L335,332" stroke="#e0a43a" stroke-width="5" stroke-dasharray="2 5"/>
+<!-- flechas de movimiento -->
+<g stroke="#2b5d9b" stroke-width="3" fill="#2b5d9b">
+<line x1="390" y1="165" x2="460" y2="165"/><polygon points="460,158 474,165 460,172"/>
+<line x1="245" y1="165" x2="285" y2="165"/><polygon points="245,158 231,165 245,172"/>
+<line x1="555" y1="430" x2="555" y2="380"/><polygon points="548,380 555,366 562,380"/><polygon points="548,430 555,444 562,430"/>
+</g>
+<text x="392" y="186" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#2b5d9b">la boquilla se mueve</text><text x="392" y="202" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#2b5d9b">en X e Y</text>
+<text x="590" y="400" font-family="Arial,Helvetica,sans-serif" font-size="15" fill="#2b5d9b">al acabar cada capa,</text><text x="590" y="418" font-family="Arial,Helvetica,sans-serif" font-size="15" fill="#2b5d9b">la bandeja baja (o la boquilla sube)</text>
+<g font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#222">
+<text x="20" y="215">1 · Bobina de filamento</text><text x="20" y="235" fill="#555" font-size="14">un hilo de plástico (PLA)</text>
+<text x="600" y="120">2 · Extrusor</text><text x="600" y="140" fill="#555" font-size="14">empuja el hilo hacia la boquilla</text>
+<text x="600" y="205">3 · Boquilla caliente</text><text x="600" y="225" fill="#555" font-size="14">funde el plástico (unos 200 °C)</text><text x="600" y="243" fill="#555" font-size="14">y lo deposita como un cordón fino</text>
+<text x="600" y="320">4 · Capas</text><text x="600" y="340" fill="#555" font-size="14">cada capa es un dibujo de cordones</text><text x="600" y="358" fill="#555" font-size="14">que se apoya en la de debajo</text>
+<text x="190" y="490">5 · Bandeja (cama)</text><text x="190" y="510" fill="#555" font-size="14">donde se pega la primera capa</text>
+</g>
+<g stroke="#999" stroke-width="1.5"><line x1="370" y1="140" x2="595" y2="120"/><line x1="348" y1="215" x2="595" y2="210"/><line x1="420" y1="360" x2="595" y2="325"/><line x1="300" y1="456" x2="300" y2="475"/></g>
+</svg>
