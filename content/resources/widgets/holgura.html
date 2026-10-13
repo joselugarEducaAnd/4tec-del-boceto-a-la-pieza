@@ -51,7 +51,7 @@ svg text{font-family:Verdana,"DejaVu Sans",Arial,sans-serif}
 
 <svg id="fig" viewBox="0 0 640 330" role="img" aria-labelledby="figt"><title id="figt">Corte de la caja y la tapa con las holguras acotadas</title><g id="g"></g></svg>
 <output id="res" role="status" aria-live="polite"></output>
-<p class="nota">Dibujo esquemático: cada décima de milímetro se ve ampliada para que la diferencia entre hueco y pestaña se pueda leer; las piezas no están a escala. Son medidas nominales del diseño: el ajuste real depende de la máquina, el material y el acabado, y se comprueba con una probeta y el calibre.</p>
+<p class="nota">Dibujo esquemático: cada décima de milímetro se ve ampliada para que la diferencia entre hueco y pestaña se pueda leer; las piezas no están a escala. Son las medidas del diseño: cómo encaja de verdad depende de la máquina, el material y el acabado, y se comprueba imprimiendo una pieza pequeña de prueba y midiéndola con el calibre.</p>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -121,7 +121,7 @@ function dibuja(){
   if(e.tot<0){
     t=`<span class="mal">La pestaña es ${mm(-e.tot)} más ancha que el hueco: no entra.</span> Forzarla rompe la pieza o la pared; se corrige en el diseño, reduciendo la pestaña o ampliando el hueco.`;
   } else if(e.tot===0){
-    t=`<b>Holgura total: 0 mm.</b> En el dibujo encaja justo, pero cualquier desviación de la fabricación (rebaba, primera capa aplastada, contracción) impedirá que entre. Prueba con 0,2, 0,3 o 0,5 mm por lado en una probeta.`;
+    t=`<b>Holgura total: 0 mm.</b> En el dibujo encaja justo, pero cualquier desviación de la fabricación (rebaba, primera capa aplastada, contracción) impedirá que entre. Prueba con 0,2, 0,3 o 0,5 mm por lado en una pieza pequeña de prueba.`;
   } else {
     t=`<b>Holgura total:</b> ${f(e.H)} − ${f(e.P)} = <b>${mm(e.tot)}</b>. Centrada, ${f(e.tot)} / 2 = <b>${mm(e.tot/2)} por lado</b>.<br>`;
     if(e.izq<=0.0001) t+=`Pegada a la izquierda: allí queda 0 y toda la holgura, <b>${mm(e.tot)}</b>, está a la derecha.`;
