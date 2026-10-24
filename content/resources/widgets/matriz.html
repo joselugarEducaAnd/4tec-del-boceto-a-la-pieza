@@ -39,7 +39,7 @@ td.fuera,th.fuera{background:#f1f1f1;color:#8a8a8a}
 <p>Cambia los pesos (1–3) y las puntuaciones (1–5): cada puntuación se multiplica por el peso de su criterio y gana la suma más alta. Solo se comparan las opciones que cumplen los requisitos imprescindibles.</p>
 <div class="modos" role="group" aria-label="Matriz">
   <button type="button" data-p="bicis">Bicis del patio</button>
-  <button type="button" data-p="gancho">Gancho de mochila</button>
+  <button type="button" data-p="fractal">Copo de Koch</button>
   <button type="button" data-p="propia">La vuestra</button>
 </div>
 <div class="tabla"><table id="t" aria-describedby="res"></table></div>
@@ -56,6 +56,10 @@ const PRESETS={
    ops:['PLA','Contrachapado','Cartón pluma'],
    p:[[4,5,1],[5,2,5],[4,4,5],[2,3,1],[3,1,1]],req:['estudio','estudio','estudio'],
    pie:'Requisito imprescindible: aguantar 5 kg. Mientras no se haya probado la combinación de diseño, material, orientación y fabricación, queda «en estudio». La puntuación no demuestra resistencia.'},
+ fractal:{crit:['Se ven los niveles','Gramos de PLA','Tiempo de impresión','Aguanta al cogerla','Sin puntas que pinchen'],pesos:[3,2,1,3,1],
+   ops:['Nivel 2 · 100 mm','Nivel 3 · 100 mm','Nivel 4 · 100 mm'],
+   p:[[3,5,5],[5,4,3],[5,4,2],[5,5,2],[4,4,3]],req:['si','si','estudio'],
+   pie:'Ejemplo con un copo de Koch en placa (no está en el catálogo). Las puntuaciones salen de datos: gramos y tiempo del laminador, y la probeta impresa. El nivel 4 queda «en estudio» hasta comprobar en una probeta si sus puntas más finas aguantan.'},
  propia:{crit:['Criterio 1','Criterio 2','Criterio 3','Criterio 4'],pesos:[2,2,2,2],
    ops:['Idea A','Idea B','Idea C'],p:[[3,3,3],[3,3,3],[3,3,3],[3,3,3]],req:['si','si','si'],
    pie:'Escribid vuestros criterios e ideas. Si el resultado sorprende al equipo, revisad los pesos y explicad el cambio.'}
